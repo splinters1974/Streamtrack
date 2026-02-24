@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#141414">
+    <title>StreamTrack UK</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+        :root {
+            --black: #141414;
+            --dark: #181818;
+            --gray: #808080;
+            --red: #e50914;
+            --red-hover: #f40612;
+            --green: #46d369;
+            --free-green: #46d369;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: var(--black);
+            color: white;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        /* ── FIX #2: Solid black header — no transparency bleed ── */
+        .header {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 15px 20px;
+            background: var(--black);    /* always solid */
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #222;
+        }
+
+        .logo { font-size: 24px; font-weight: bold; color: var(--red); letter-spacing: -1px; }
+
+        .header-icons { display: flex; gap: 20px; align-items: center; }
+
+        .icon-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; position: relative; }
+
+        .notification-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: var(--red); color: white; font-size: 10px;
+            padding: 2px 5px; border-radius: 50%;
+        }
+
+        /* ── FIX #2: Tab switcher also solid ── */
+        .tab-switcher {
+            position: fixed;
+            top: 57px; width: 100%;
+            display: flex;
+            background: var(--black);    /* solid, no blur bleed */
+            z-index: 999;
+            border-bottom: 1px solid #333;
+        }
+
+        .tab-btn {
+            flex: 1; padding: 14px;
+            background: none; border: none;
+            color: var(--gray);
+            font-size: 14px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px;
+            cursor: pointer; position: relative; transition: color 0.2s;
+        }
+
+        .tab-btn.active { color: white; }
+
+        .tab-btn.active::after {
+            content: ''; position: absolute; bottom: 0; left: 25%; width: 50%;
+            height: 3px; background: var(--red);
+        }
+
+        .main-content { margin-top: 108px; padding: 0 15px; }
+
+        /* ── Hero ── */
+        .hero {
+            position: relative; height: 60vh;
+            margin: -15px -15px 20px -15px;
+            background-size: cover; background-position: center top;
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 20px;
+        }
+
+        .hero::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80%;
+            background: linear-gradient(to top, var(--black) 20%, transparent);
+            z-index: 1;
+        }
+
+        .hero-content { position: relative; z-index: 2; }
+
+        .hero-title { font-size: 30px; font-weight: bold; margin-bottom: 10px; text-shadow: 2px 2px 8px rgba(0,0,0,0.8); }
+
+        .hero-meta { display: flex; gap: 12px; margin-bottom: 15px; font-size: 13px; color: #a3a3a3; flex-wrap: wrap; }
+
+        .hero-rating { color: var(--green); font-weight: bold; }
+
+        .hero-buttons { display: flex; gap: 10px; }
+
+        /* ── FIX #8: Onboarding banner ── */
+        .onboarding-banner {
+            display: flex; align-items: center; gap: 15px;
+            background: #1a2a1a; border: 1px solid #46d369;
+            border-radius: 10px; padding: 16px; margin-bottom: 20px;
+        }
+
+        .onboarding-icon { font-size: 32px; flex-shrink: 0; }
+
+        .onboarding-banner p { font-size: 13px; color: #aaa; margin-top: 4px; }
+
+        .btn {
+            padding: 11px 22px; border: none; border-radius: 4px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 8px;
+            transition: transform 0.15s, opacity 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: white; color: black; }
+        .btn-secondary { background: rgba(109,109,110,0.7); color: white; }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 0 12px; }
+
+        .section-title { font-size: 18px; font-weight: 600; }
+
+        /* ── FIX #3: Row wrapper with scroll arrows ── */
+        .row-wrapper { position: relative; margin: 0 -5px; }
+
+        .content-row {
+            display: flex; gap: 10px;
+            overflow-x: auto; overflow-y: visible;
+            scroll-snap-type: x mandatory;
+            padding: 5px 30px 15px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .content-row::-webkit-scrollbar { display: none; }
+
+        .scroll-arrow {
+            position: absolute; top: 50%; transform: translateY(-60%);
+            background: rgba(0,0,0,0.75); border: 1px solid #444;
+            color: white; width: 30px; height: 50px; border-radius: 4px;
+            font-size: 22px; cursor: pointer; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .scroll-arrow:hover { background: rgba(0,0,0,0.95); }
+        .scroll-left  { left: 0; }
+        .scroll-right { right: 0; }
+
+        /* ── Cards ── */
+        .content-card {
+            flex: 0 0 auto; width: 140px;
+            scroll-snap-align: start; position: relative;
+            border-radius: 4px; overflow: hidden; cursor: pointer;
+            transition: transform 0.25s;
+        }
+
+        .content-card:hover { transform: scale(1.04); z-index: 5; }
+        .content-card:active { transform: scale(0.96); }
+
+        .card-image { width: 100%; height: 210px; object-fit: cover; border-radius: 4px; display: block; }
+
+        .card-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+            padding: 10px; opacity: 0; transition: opacity 0.25s;
+        }
+
+        .content-card:hover .card-overlay { opacity: 1; }
+
+        .card-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .card-progress { height: 3px; background: #333; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+        .card-progress-bar { height: 100%; background: var(--red); border-radius: 2px; }
+
+        .status-badge {
+            position: absolute; top: 5px; right: 5px;
+            background: var(--red); color: white; font-size: 10px;
+            padding: 3px 6px; border-radius: 3px; font-weight: bold; text-transform: capitalize;
+        }
+
+        .status-badge.watching  { background: #e87c03; }
+        .status-badge.completed { background: var(--green); color: #000; }
+        .status-badge.watchlist { background: #555; }
+
+        /* ── FIX #11: Remove button ── */
+        .remove-btn {
+            position: absolute; top: 5px; left: 5px;
+            background: rgba(0,0,0,0.7); border: none; color: #aaa;
+            width: 22px; height: 22px; border-radius: 50%;
+            font-size: 12px; cursor: pointer; display: none;
+            align-items: center; justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .content-card:hover .remove-btn { display: flex; }
+        .remove-btn:hover { color: var(--red); }
+
+        /* ── +1 EP button ── */
+        .quick-ep-btn {
+            background: var(--red); border: none; color: white;
+            font-size: 10px; font-weight: 700; padding: 3px 7px;
+            border-radius: 3px; cursor: pointer; white-space: nowrap;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .quick-ep-btn:hover  { background: var(--red-hover); }
+        .quick-ep-btn:active { transform: scale(0.93); }
+
+        /* ── FREE badge ── */
+        .free-badge {
+            display: inline-block; background: var(--free-green);
+            color: #000; font-size: 10px; font-weight: 800;
+            padding: 2px 6px; border-radius: 3px; margin-left: 8px;
+            letter-spacing: 0.5px; vertical-align: middle;
+        }
+
+        /* ── Stars ── */
+        .star { cursor: pointer; user-select: none; }
+
+        /* ── Modal ── */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--black); z-index: 2000; overflow-y: auto;
+        }
+
+        .modal.active { display: block; }
+
+        /* FIX #4: Modal header uses backdrop (landscape), never cropped portrait */
+        .modal-header {
+            position: relative; height: 45vw; min-height: 200px; max-height: 320px;
+            background-size: cover; background-position: center center;
+        }
+
+        .modal-header::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 60%; background: linear-gradient(to top, var(--black), transparent);
+        }
+
+        .modal-close {
+            position: absolute; top: 12px; right: 12px;
+            background: rgba(0,0,0,0.65); border: none; color: white;
+            width: 38px; height: 38px; border-radius: 50%;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2;
+        }
+
+        /* FIX #4: Poster thumbnail beside title */
+        .modal-poster-row {
+            display: flex; gap: 15px; align-items: flex-start;
+            margin-top: -20px; position: relative; z-index: 2; padding: 0 20px 0;
+        }
+
+        .modal-poster-thumb {
+            width: 80px; height: 120px; object-fit: cover;
+            border-radius: 6px; flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+        }
+
+        .modal-title-block { flex: 1; padding-top: 10px; }
+
+        .modal-title { font-size: 22px; font-weight: bold; margin-bottom: 8px; line-height: 1.2; }
+
+        .modal-content { padding: 15px 20px 20px; }
+
+        .modal-meta { display: flex; gap: 10px; margin-bottom: 12px; font-size: 13px; flex-wrap: wrap; }
+
+        .modal-rating { color: var(--green); font-weight: bold; }
+
+        .modal-synopsis { font-size: 14px; line-height: 1.6; color: #d2d2d2; margin-bottom: 20px; }
+
+        .modal-actions { display: flex; gap: 10px; margin-bottom: 25px; }
+
+        .action-btn {
+            flex: 1; padding: 12px; border: 1px solid #555;
+            background: transparent; color: white; border-radius: 4px;
+            font-size: 13px; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .action-btn.active { background: white; color: black; border-color: white; }
+
+        .info-section { margin-bottom: 25px; padding: 0 0px; }
+
+        .info-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: #a3a3a3; }
+
+        /* ── Cast ── */
+        .cast-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .cast-list::-webkit-scrollbar { display: none; }
+
+        .cast-member { flex: 0 0 auto; text-align: center; width: 75px; }
+
+        .cast-image { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; margin-bottom: 5px; background: #333; }
+
+        .cast-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ── Streaming ── */
+        .streaming-options { display: flex; flex-direction: column; gap: 8px; }
+
+        .streaming-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px; background: var(--dark); border-radius: 8px;
+            text-decoration: none; color: white; transition: background 0.2s;
+        }
+
+        .streaming-option:hover { background: #222; }
+
+        .streaming-logo {
+            width: 40px; height: 40px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; flex-shrink: 0;
+        }
+
+        .streaming-logo-img {
+            width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+        }
+
+        .streaming-info { flex: 1; }
+        .streaming-name { font-weight: 600; margin-bottom: 2px; }
+        .streaming-type { font-size: 12px; color: var(--gray); }
+
+        /* ── FIX #5: Episodes ── */
+        .episode-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .episode-item {
+            display: flex; gap: 12px; padding: 12px;
+            background: var(--dark); border-radius: 8px; cursor: pointer;
+            align-items: flex-start; transition: background 0.2s;
+        }
+
+        .episode-item:hover { background: #222; }
+
+        .episode-item.episode-watched { border-left: 3px solid var(--green); }
+
+        .episode-still {
+            width: 90px; height: 55px; object-fit: cover;
+            border-radius: 4px; flex-shrink: 0; background: #333;
+        }
+
+        .episode-still-placeholder {
+            width: 90px; height: 55px; background: #2a2a2a;
+            border-radius: 4px; flex-shrink: 0;
+        }
+
+        .episode-info { flex: 1; min-width: 0; }
+
+        .episode-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+
+        .episode-overview { font-size: 12px; color: #aaa; line-height: 1.4; }
+
+        /* ── Bottom Nav ── */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%;
+            background: var(--black); border-top: 1px solid #333;
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: var(--gray); font-size: 11px; cursor: pointer;
+            background: none; border: none; padding: 5px 15px; transition: color 0.2s;
+        }
+
+        .nav-item.active { color: white; }
+        .nav-item span:first-child { font-size: 20px; }
+
+        /* ── Search ── */
+        .search-container { padding: 80px 15px 20px; }
+
+        .search-box {
+            width: 100%; padding: 14px 16px;
+            background: #2a2a2a; border: none; border-radius: 6px;
+            color: white; font-size: 16px; margin-bottom: 15px; outline: none;
+            transition: background 0.2s;
+        }
+
+        .search-box:focus { background: #333; }
+        .search-box::placeholder { color: #777; }
+
+        .filter-chips { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 5px; scrollbar-width: none; }
+        .filter-chips::-webkit-scrollbar { display: none; }
+
+        .chip {
+            padding: 7px 14px; background: #2a2a2a; border: 1px solid #444;
+            border-radius: 20px; color: white; font-size: 13px;
+            white-space: nowrap; cursor: pointer; transition: all 0.2s;
+        }
+
+        .chip.active { background: white; color: black; border-color: white; }
+
+        /* ── My List tabs ── */
+        .list-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+
+        .list-tab {
+            padding: 8px 18px; background: transparent; border: 1px solid #444;
+            border-radius: 20px; color: white; font-size: 13px;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+
+        .list-tab.active { background: white; color: black; border-color: white; }
+
+        /* ── Empty state ── */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+        .empty-icon { font-size: 48px; margin-bottom: 15px; }
+
+        /* ── FIX #12: Skeleton with shimmer ── */
+        .skeleton {
+            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card { width: 140px; height: 210px; }
+
+        /* ── Offline banner ── */
+        .offline-banner {
+            position: fixed; top: 0; width: 100%;
+            background: #e87c03; color: white;
+            text-align: center; padding: 8px; font-size: 13px;
+            z-index: 3000; transform: translateY(-100%); transition: transform 0.3s;
+        }
+
+        .offline-banner.show { transform: translateY(0); }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: 90px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: white; color: black;
+            padding: 11px 22px; border-radius: 4px;
+            font-weight: 600; font-size: 14px; z-index: 3000;
+            opacity: 0; transition: all 0.25s; white-space: nowrap; pointer-events: none;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* ── Responsive ── */
+        @media (min-width: 768px) {
+            .content-card { width: 180px; }
+            .card-image { height: 270px; }
+            .skeleton-card { height: 270px; }
+            .hero-title { font-size: 42px; }
+            .modal-poster-thumb { width: 100px; height: 150px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="offline-banner" id="offlineBanner">
+        ⚠️ You're offline. Changes will sync when connection returns.
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <header class="header" id="header">
+        <div class="logo">STREAMTRACK</div>
+        <div class="header-icons">
+            <button class="icon-btn" onclick="app.showNotifications()">🔔</button>
+            <button class="icon-btn" onclick="app.showProfile()">👤</button>
+        </div>
+    </header>
+
+    <div class="tab-switcher">
+        <button class="tab-btn active" data-tab="tv"     onclick="app.switchTab('tv')">TV Shows</button>
+        <button class="tab-btn"        data-tab="movies" onclick="app.switchTab('movies')">Movies</button>
+    </div>
+
+    <main class="main-content" id="mainContent"></main>
+
+    <div class="modal" id="detailModal">
+        <div class="modal-header" id="modalHeader">
+            <button class="modal-close" onclick="app.closeModal()">×</button>
+        </div>
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="app.navigate('home')">
+            <span>🏠</span><span>Home</span>
+        </button>
+        <button class="nav-item" onclick="app.navigate('search')">
+            <span>🔍</span><span>Search</span>
+        </button>
+        <button class="nav-item" onclick="app.navigate('mylist')">
+            <span>📋</span><span>My List</span>
+        </button>
+        <button class="nav-item" onclick="app.navigate('downloads')">
+            <span>⬇️</span><span>Offline</span>
+        </button>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/db.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/offline.js"></script>
+    <script src="js/recommendations.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
